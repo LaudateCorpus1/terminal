@@ -100,6 +100,7 @@ namespace winrt::Microsoft::Terminal::Settings::Model::implementation
         INHERITABLE_SETTING(Model::GlobalAppSettings, bool, DetectURLs, true);
         INHERITABLE_SETTING(Model::GlobalAppSettings, bool, MinimizeToTray, false);
         INHERITABLE_SETTING(Model::GlobalAppSettings, bool, AlwaysShowTrayIcon, false);
+        INHERITABLE_SETTING(Model::GlobalAppSettings, winrt::Windows::Foundation::Collections::IVector<winrt::hstring>, DisabledProfileSources, nullptr);
 
     private:
         guid _defaultProfile;

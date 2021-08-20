@@ -27,14 +27,14 @@ static constexpr std::string_view RetroTerminalEffectKey{ "experimental.retroTer
 static constexpr std::string_view PixelShaderPathKey{ "experimental.pixelShaderPath" };
 static constexpr std::string_view IntenseTextStyleKey{ "intenseTextStyle" };
 
-winrt::Microsoft::Terminal::Settings::Model::implementation::AppearanceConfig::AppearanceConfig(const winrt::weak_ref<Profile> sourceProfile) :
-    _sourceProfile(sourceProfile)
+AppearanceConfig::AppearanceConfig(winrt::weak_ref<Profile> sourceProfile) :
+    _sourceProfile(std::move(sourceProfile))
 {
 }
 
-winrt::com_ptr<AppearanceConfig> AppearanceConfig::CopyAppearance(const winrt::com_ptr<AppearanceConfig> source, const winrt::weak_ref<Profile> sourceProfile)
+winrt::com_ptr<AppearanceConfig> AppearanceConfig::CopyAppearance(const winrt::com_ptr<AppearanceConfig> source, winrt::weak_ref<Profile> sourceProfile)
 {
-    auto appearance{ winrt::make_self<AppearanceConfig>(sourceProfile) };
+    auto appearance{ winrt::make_self<AppearanceConfig>(std::move(sourceProfile)) };
     auto const sourceAppearance = source.try_as<AppearanceConfig>();
     appearance->_BackgroundImagePath = sourceAppearance->_BackgroundImagePath;
     appearance->_BackgroundImageOpacity = sourceAppearance->_BackgroundImageOpacity;

@@ -260,6 +260,48 @@ namespace Microsoft::Terminal::Settings::Model::JsonUtils
     };
 
     template<typename T>
+    struct ConversionTrait<winrt::Windows::Foundation::Collections::IVector<T>>
+    {
+        winrt::Windows::Foundation::Collections::IVector<T> FromJson(const Json::Value& json) const
+        {
+            ConversionTrait<T> trait;
+            std::vector<T> val;
+            val.reserve(json.size());
+            
+            for (const auto& v : json)
+            {
+                val.emplace_back(trait.FromJson(v));
+            }
+
+            return winrt::single_threaded_vector<T>(std::move(val));
+        }
+
+        bool CanConvert(const Json::Value& json) const
+        {
+            ConversionTrait<T> trait;
+            return json.isArray() && std::all_of(json.begin(), json.end(), [&](const auto& v) { return trait.CanConvert(v); });
+        }
+
+        Json::Value ToJson(const winrt::Windows::Foundation::Collections::IVector<T>& val)
+        {
+            ConversionTrait<T> trait;
+            Json::Value json{ Json::arrayValue };
+
+            for (const auto& v : val)
+            {
+                json.append(trait.ToJson(v));
+            }
+
+            return json;
+        }
+
+        std::string TypeDescription() const
+        {
+            return fmt::format("array ({})", ConversionTrait<T>{}.TypeDescription());
+        }
+    };
+
+    template<typename T>
     struct ConversionTrait<winrt::Windows::Foundation::Collections::IMap<winrt::hstring, T>>
     {
         winrt::Windows::Foundation::Collections::IMap<winrt::hstring, T> FromJson(const Json::Value& json) const

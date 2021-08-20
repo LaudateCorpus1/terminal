@@ -4,9 +4,7 @@
 #include "pch.h"
 #include "GlobalAppSettings.h"
 #include "../../types/inc/Utils.hpp"
-#include "../../inc/DefaultSettings.h"
 #include "JsonUtils.h"
-#include "TerminalSettingsSerializationHelpers.h"
 #include "KeyChordSerialization.h"
 
 #include "GlobalAppSettings.g.cpp"
@@ -50,6 +48,7 @@ static constexpr std::string_view WindowingBehaviorKey{ "windowingBehavior" };
 static constexpr std::string_view TrimBlockSelectionKey{ "trimBlockSelection" };
 static constexpr std::string_view AlwaysShowTrayIconKey{ "alwaysShowTrayIcon" };
 static constexpr std::string_view MinimizeToTrayKey{ "minimizeToTray" };
+static constexpr std::string_view DisabledProfileSourcesKey{ "disabledProfileSources" };
 
 static constexpr std::string_view DebugFeaturesKey{ "debugFeatures" };
 
@@ -71,7 +70,6 @@ bool GlobalAppSettings::_getDefaultDebugFeaturesValue()
 
 GlobalAppSettings::GlobalAppSettings() :
     _actionMap{ winrt::make_self<implementation::ActionMap>() },
-    _keybindingsWarnings{},
     _validDefaultProfile{ false },
     _defaultProfile{}
 {
@@ -133,6 +131,7 @@ winrt::com_ptr<GlobalAppSettings> GlobalAppSettings::Copy() const
     globals->_DetectURLs = _DetectURLs;
     globals->_MinimizeToTray = _MinimizeToTray;
     globals->_AlwaysShowTrayIcon = _AlwaysShowTrayIcon;
+    globals->_DisabledProfileSources = _DisabledProfileSources;
 
     globals->_UnparsedDefaultProfile = _UnparsedDefaultProfile;
     globals->_validDefaultProfile = _validDefaultProfile;
@@ -216,7 +215,7 @@ std::optional<winrt::hstring> GlobalAppSettings::_getUnparsedDefaultProfileImpl(
 
     /*user set value was not set*/
     /*iterate through parents to find a value*/
-    for (auto parent : _parents)
+    for (const auto& parent : _parents)
     {
         if (auto val{ parent->_getUnparsedDefaultProfileImpl() })
         {
@@ -254,55 +253,32 @@ void GlobalAppSettings::LayerJson(const Json::Value& json)
     // resolved value, then making it valid.
     _validDefaultProfile = false;
     JsonUtils::GetValueForKey(json, DefaultProfileKey, _UnparsedDefaultProfile);
-
     JsonUtils::GetValueForKey(json, AlwaysShowTabsKey, _AlwaysShowTabs);
-
     JsonUtils::GetValueForKey(json, ConfirmCloseAllKey, _ConfirmCloseAllTabs);
-
     JsonUtils::GetValueForKey(json, InitialRowsKey, _InitialRows);
-
     JsonUtils::GetValueForKey(json, InitialColsKey, _InitialCols);
-
     JsonUtils::GetValueForKey(json, InitialPositionKey, _InitialPosition);
-
     JsonUtils::GetValueForKey(json, CenterOnLaunchKey, _CenterOnLaunch);
-
     JsonUtils::GetValueForKey(json, ShowTitleInTitlebarKey, _ShowTitleInTitlebar);
-
     JsonUtils::GetValueForKey(json, ShowTabsInTitlebarKey, _ShowTabsInTitlebar);
-
     JsonUtils::GetValueForKey(json, WordDelimitersKey, _WordDelimiters);
-
     JsonUtils::GetValueForKey(json, CopyOnSelectKey, _CopyOnSelect);
-
     JsonUtils::GetValueForKey(json, InputServiceWarningKey, _InputServiceWarning);
-
     JsonUtils::GetValueForKey(json, CopyFormattingKey, _CopyFormatting);
-
     JsonUtils::GetValueForKey(json, WarnAboutLargePasteKey, _WarnAboutLargePaste);
-
     JsonUtils::GetValueForKey(json, WarnAboutMultiLinePasteKey, _WarnAboutMultiLinePaste);
-
     JsonUtils::GetValueForKey(json, LaunchModeKey, _LaunchMode);
-
     JsonUtils::GetValueForKey(json, LanguageKey, _Language);
-
     JsonUtils::GetValueForKey(json, ThemeKey, _Theme);
-
     JsonUtils::GetValueForKey(json, TabWidthModeKey, _TabWidthMode);
-
     JsonUtils::GetValueForKey(json, SnapToGridOnResizeKey, _SnapToGridOnResize);
 
     // GetValueForKey will only override the current value if the key exists
     JsonUtils::GetValueForKey(json, DebugFeaturesKey, _DebugFeaturesEnabled);
-
     JsonUtils::GetValueForKey(json, ForceFullRepaintRenderingKey, _ForceFullRepaintRendering);
-
     JsonUtils::GetValueForKey(json, SoftwareRenderingKey, _SoftwareRendering);
     JsonUtils::GetValueForKey(json, ForceVTInputKey, _ForceVTInput);
-
     JsonUtils::GetValueForKey(json, EnableStartupTaskKey, _StartOnUserLogin);
-
     JsonUtils::GetValueForKey(json, AlwaysOnTopKey, _AlwaysOnTop);
 
     // GH#8076 - when adding enum values to this key, we also changed it from
@@ -310,22 +286,15 @@ void GlobalAppSettings::LayerJson(const Json::Value& json)
     // "useTabSwitcher", but prefer "tabSwitcherMode"
     JsonUtils::GetValueForKey(json, LegacyUseTabSwitcherModeKey, _TabSwitcherMode);
     JsonUtils::GetValueForKey(json, TabSwitcherModeKey, _TabSwitcherMode);
-
     JsonUtils::GetValueForKey(json, DisableAnimationsKey, _DisableAnimations);
-
     JsonUtils::GetValueForKey(json, StartupActionsKey, _StartupActions);
-
     JsonUtils::GetValueForKey(json, FocusFollowMouseKey, _FocusFollowMouse);
-
     JsonUtils::GetValueForKey(json, WindowingBehaviorKey, _WindowingBehavior);
-
     JsonUtils::GetValueForKey(json, TrimBlockSelectionKey, _TrimBlockSelection);
-
     JsonUtils::GetValueForKey(json, DetectURLsKey, _DetectURLs);
-
     JsonUtils::GetValueForKey(json, MinimizeToTrayKey, _MinimizeToTray);
-
     JsonUtils::GetValueForKey(json, AlwaysShowTrayIconKey, _AlwaysShowTrayIcon);
+    JsonUtils::GetValueForKey(json, DisabledProfileSourcesKey, _DisabledProfileSources);
 
     // This is a helper lambda to get the keybindings and commands out of both
     // and array of objects. We'll use this twice, once on the legacy
@@ -424,6 +393,7 @@ Json::Value GlobalAppSettings::ToJson() const
     JsonUtils::SetValueForKey(json, DetectURLsKey,                  _DetectURLs);
     JsonUtils::SetValueForKey(json, MinimizeToTrayKey,              _MinimizeToTray);
     JsonUtils::SetValueForKey(json, AlwaysShowTrayIconKey,          _AlwaysShowTrayIcon);
+    JsonUtils::SetValueForKey(json, DisabledProfileSourcesKey,      _DisabledProfileSources);
     // clang-format on
 
     json[JsonKey(ActionsKey)] = _actionMap->ToJson();
